@@ -7,7 +7,15 @@
 #include <errno.h>
 #include <unistd.h>
 
+#define BUF_SIZE 500
+
+// static const char *HTTP_STATUS = "HTTP/1.1 200 OK";
+// static const char *HEADERS = "";
+static const char *HTTP_RESPONSE = "HTTP/1.1 200 OK\r\n\r\n";
+
 int main() {
+	// char *HTTP_RESPONSE;
+	// sprintf(HTTP_RESPONSE, "%s\r\n%s\r\n", HTTP_STATUS, HEADERS);
 	// Disable output buffering
 	setbuf(stdout, NULL);
 
@@ -16,8 +24,9 @@ int main() {
 
 	// Uncomment this block to pass the first stage
 	//
-	int server_fd, client_addr_len;
+	int server_fd, client_fd, client_addr_len;
 	struct sockaddr_in client_addr;
+	char buf[BUF_SIZE];
 	
 	server_fd = socket(AF_INET, SOCK_STREAM, 0);
 	if (server_fd == -1) {
@@ -50,11 +59,22 @@ int main() {
 	}
 	
 	printf("Waiting for a client to connect...\n");
+
 	client_addr_len = sizeof(client_addr);
 	
-	accept(server_fd, (struct sockaddr *) &client_addr, &client_addr_len);
+	client_fd = accept(server_fd, (struct sockaddr *) &client_addr, &client_addr_len);
+	if (client_fd == -1) {
+		printf("Failed to connect to the active client: %s...\n", strerror(errno));
+		return 1;
+	}
 	printf("Client connected\n");
+
+	/* Handle receiving data */
+	if (recv(client_fd, buf, BUF_SIZE, 0) == -1) {
+		printf("Receiving failed: %s \n", strerror(errno));
+	}
 	
+	write(client_fd, (const char *)HTTP_RESPONSE, strlen(HTTP_RESPONSE));
 	close(server_fd);
 
 	return 0;
