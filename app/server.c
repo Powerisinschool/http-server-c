@@ -32,6 +32,7 @@ int main() {
 	int server_fd, client_fd, client_addr_len;
 	struct sockaddr_in client_addr;
 	char buf[BUF_SIZE];
+	char *response = malloc(sizeof(char)*500);
 	char *path = malloc(sizeof(char) * 100);
 
 	server_fd = socket(AF_INET, SOCK_STREAM, 0);
@@ -86,12 +87,17 @@ int main() {
 	path = strtok(NULL, " ");
 	// printf("Path: %s\n", path);
 
-	if (strcmp(path, "/") == 0) {
+	if (strncmp(path, "/echo/", 6) == 0) {
+		const char *content = path + 6;
+		// response = (char *)HTTP_200_RESPONSE;
+		sprintf(response, "HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nContent-Length: %zu\r\n\r\n%s", strlen(content), content);
+	} else if (strcmp(path, "/") == 0) {
 		// printf("200 OK\n");
-		write(client_fd, (const char *)HTTP_200_RESPONSE, strlen(HTTP_200_RESPONSE));
+		response = (char *)HTTP_200_RESPONSE;
 	} else {
-		write(client_fd, (const char *)HTTP_404_RESPONSE, strlen(HTTP_404_RESPONSE));
+		response = (char *)HTTP_404_RESPONSE;
 	}
+	write(client_fd, (const char *)response, strlen(response));
 	
 	
 	close(server_fd);
