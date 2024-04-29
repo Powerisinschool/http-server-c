@@ -32,7 +32,10 @@ int main() {
 	int server_fd, client_fd, client_addr_len;
 	struct sockaddr_in client_addr;
 	char buf[BUF_SIZE];
+	char *buf2 = malloc(sizeof(char) * BUF_SIZE);
+	char *header = malloc(sizeof(char) * 100);
 	char *response = malloc(sizeof(char)*500);
+	char *userAgent = malloc(sizeof(char)*500);
 	char *path = malloc(sizeof(char) * 100);
 
 	server_fd = socket(AF_INET, SOCK_STREAM, 0);
@@ -79,9 +82,20 @@ int main() {
 	/* Handle receiving data */
 	if (recv(client_fd, buf, BUF_SIZE, 0) == -1) {
 		printf("Receiving failed: %s \n", strerror(errno));
+		return 1;
 	}
 
 	// printf("\n=====\n%s\n=====\n", buf);
+
+	strcpy(buf2, buf);
+	
+	for (header = strtok(buf2, "\r\n"); header != NULL; header = strtok(NULL, "\r\n")) {
+		// printf("Header Value: %s\n\n", header);
+		if (strncmp(header, "User-Agent", 10) == 0) {
+			userAgent = header + 12;
+			// printf("User Agent: %s\n", userAgent);
+		}
+	}
 
 	strtok(buf, " ");
 	path = strtok(NULL, " ");
@@ -91,6 +105,8 @@ int main() {
 		const char *content = path + 6;
 		// response = (char *)HTTP_200_RESPONSE;
 		sprintf(response, "HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nContent-Length: %zu\r\n\r\n%s", strlen(content), content);
+	} else if (strcmp(path, "/user-agent") == 0) {
+		sprintf(response, "HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nContent-Length: %zu\r\n\r\n%s", strlen(userAgent), userAgent);
 	} else if (strcmp(path, "/") == 0) {
 		// printf("200 OK\n");
 		response = (char *)HTTP_200_RESPONSE;
