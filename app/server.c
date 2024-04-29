@@ -11,6 +11,7 @@
 #define BUF_SIZE 500
 
 static const char *HTTP_200_RESPONSE = "HTTP/1.1 200 OK\r\n\r\n";
+static const char *HTTP_201_RESPONSE = "HTTP/1.1 201 Created\r\n\r\n";
 static const char *HTTP_404_RESPONSE = "HTTP/1.1 404 Not Found\r\n\r\n";
 
 typedef struct {
@@ -75,7 +76,7 @@ void *handle_connection(void *arg) {
 
 			fprintf(fptr, "%s", body);
 			fclose(fptr);
-			response = "HTTP/1.1 201 Created\r\n\r\n";
+			response = (char *)HTTP_201_RESPONSE;
 		} else {
 			FILE *fptr = fopen(absolutePath, "r");
 
