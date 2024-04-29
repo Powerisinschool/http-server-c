@@ -24,9 +24,11 @@ void *handle_connection(void *arg) {
 	char *directory = args->directory;
     char buf[BUF_SIZE];
 	char *buf2 = malloc(sizeof(char) * BUF_SIZE);
+	char *method;
     char *path;
-	char *response = malloc(sizeof(char)*500);
-	char *userAgent = malloc(sizeof(char)*500);
+	char *body = malloc(sizeof(char) * 150);
+	char *response = malloc(sizeof(char) * 500);
+	char *userAgent = malloc(sizeof(char) * 500);
 
 	if (recv(client_fd, buf, BUF_SIZE, 0) == -1) {
 		printf("Receiving failed: %s \n", strerror(errno));
@@ -42,9 +44,11 @@ void *handle_connection(void *arg) {
 			userAgent = header + 12;
 			// printf("User Agent: %s\n", userAgent);
 		}
+		body = header;
 	}
 
-	if (strtok(buf, " ") == NULL) {
+	method = strtok(buf, " ");
+	if (method == NULL) {
         printf("Invalid request\n");
         close(client_fd);
         return NULL;
@@ -60,16 +64,30 @@ void *handle_connection(void *arg) {
 		char fileContent[300];
 		sprintf(absolutePath, "%s/%s", directory, filename);
 
-		FILE *fptr = fopen(absolutePath, "r");
+		if (strcmp(method, "POST") == 0) {
+			FILE *fptr = fopen(absolutePath, "w");
 
-		if (fptr == NULL) {
-			// That is, the file was not found
-			response = (char *)HTTP_404_RESPONSE;
-		} else {
-			fgets(fileContent, 300, fptr);
+			if (fptr == NULL) {
+				printf("An error occured: %s\n", strerror(errno));
+				close(client_fd);
+				return NULL;
+			}
+
+			fprintf(fptr, "%s", body);
 			fclose(fptr);
+			response = "HTTP/1.1 201 Created\r\n\r\n";
+		} else {
+			FILE *fptr = fopen(absolutePath, "r");
 
-			sprintf(response, "HTTP/1.1 200 OK\r\nContent-Type: application/octet-stream\r\nContent-Length: %zu\r\n\r\n%s", strlen(fileContent), fileContent);
+			if (fptr == NULL) {
+				// That is, the file was not found
+				response = (char *)HTTP_404_RESPONSE;
+			} else {
+				fgets(fileContent, 300, fptr);
+				fclose(fptr);
+
+				sprintf(response, "HTTP/1.1 200 OK\r\nContent-Type: application/octet-stream\r\nContent-Length: %zu\r\n\r\n%s", strlen(fileContent), fileContent);
+			}
 		}
 	} else if (strcmp(path, "/user-agent") == 0) {
 		sprintf(response, "HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nContent-Length: %zu\r\n\r\n%s", strlen(userAgent), userAgent);
