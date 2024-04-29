@@ -11,7 +11,12 @@
 
 // static const char *HTTP_STATUS = "HTTP/1.1 200 OK";
 // static const char *HEADERS = "";
-static const char *HTTP_RESPONSE = "HTTP/1.1 200 OK\r\n\r\n";
+static const char *HTTP_200_RESPONSE = "HTTP/1.1 200 OK\r\n\r\n";
+static const char *HTTP_404_RESPONSE = "HTTP/1.1 404 Not Found\r\n\r\n";
+
+// char *respond(int status) {
+// 	return "HTTP/1.1 " + "status" + " OK\r\n\r\n";
+// }
 
 int main() {
 	// char *HTTP_RESPONSE;
@@ -27,7 +32,8 @@ int main() {
 	int server_fd, client_fd, client_addr_len;
 	struct sockaddr_in client_addr;
 	char buf[BUF_SIZE];
-	
+	char *path = malloc(sizeof(char) * 100);
+
 	server_fd = socket(AF_INET, SOCK_STREAM, 0);
 	if (server_fd == -1) {
 		printf("Socket creation failed: %s...\n", strerror(errno));
@@ -73,8 +79,21 @@ int main() {
 	if (recv(client_fd, buf, BUF_SIZE, 0) == -1) {
 		printf("Receiving failed: %s \n", strerror(errno));
 	}
+
+	// printf("\n=====\n%s\n=====\n", buf);
+
+	strtok(buf, " ");
+	path = strtok(NULL, " ");
+	// printf("Path: %s\n", path);
+
+	if (strcmp(path, "/") == 0) {
+		// printf("200 OK\n");
+		write(client_fd, (const char *)HTTP_200_RESPONSE, strlen(HTTP_200_RESPONSE));
+	} else {
+		write(client_fd, (const char *)HTTP_404_RESPONSE, strlen(HTTP_404_RESPONSE));
+	}
 	
-	write(client_fd, (const char *)HTTP_RESPONSE, strlen(HTTP_RESPONSE));
+	
 	close(server_fd);
 
 	return 0;
